@@ -27,7 +27,7 @@ void setup() {
  *********************************************************************/
 unsigned char DS18B20_Reset()
 {
-	unsigned char HaveDs18b20 = 0;  //未知狀態，所以先設為不存在的狀態先
+
 	pinMode(DQ_Pin, OUTPUT);    //將DQ_Pin調整為輸出狀態
 	digitalWrite(DQ_Pin, HIGH); //將電位先拉高
 	digitalWrite(DQ_Pin, LOW);  //主機拉低電位（開始主機reset脈波）
@@ -42,15 +42,9 @@ unsigned char DS18B20_Reset()
 	pinMode(DQ_Pin, INPUT);
 	//將DQ_Pin設定作數位輸入動作
 
-	HaveDs18b20 = digitalRead(DQ_Pin);
-	//主機讀取DQ_Pin目前的電位值（低電位代表著成功找到，高電位則是無
 
-	while (!digitalRead(DQ_Pin)) {
-		return HaveDs18b20;
-	}
-	//直至DQ線的電位回到高位時，傳回reset的結果
-	//意味著DB18B20應答的時間（max240us)已完成
-	//讓DS18B20充份表達才回，主機不會過速的下指令，
+	return digitalRead(DQ_Pin);
+
 }
 
 void loop() {
@@ -59,7 +53,7 @@ void loop() {
 	//傳回值是0代表reset成功
 	//Serial.println(DS18B20_Reset());
 
-	if (DS18B20_Reset()) {
+	if(DS18B20_Reset()) {
 		Serial.println("No DS18B20 in the wire bus");
 	}
 	else {
@@ -67,5 +61,5 @@ void loop() {
 	}
 
 	delay(2000);
-	this a test;
+
 }
