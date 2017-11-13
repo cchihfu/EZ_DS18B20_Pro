@@ -2,16 +2,15 @@
  - 主機版本：Arduino UNO R3
  - 適用狀況：本程式只適用於一台Arduion連接一個DS18B20
  - 程式功能：確認DS18B20是否在線
- - 版本說明：依重構函式概念，將確認作業函式原子化
+ - 版本說明：依重構函式概念，將確認函式原子化
  - 注意事項：DS18B20的DQ腳需加上拉電阻4.7k
  *********************************************************************/
 //Arduino數位腳位2接到DS18B20的第2腳(DQ)，DQ為Data input/output的縮寫
-#define g_dq_pin 2      
+#define g_dq_pin 2
 
 void setup() {
 	Serial.begin(9600);
 	Serial.println("<<Star Test the DS18B20 >>");
-
 }
 
 void loop() {
@@ -20,21 +19,11 @@ void loop() {
 }
 
 uint8_t IsResetOk()
-{	
-	uint8_t is_exist=0;		//存在與否之區域變數，先預設為不存在
-
+{
 	TxReset();
-
-	is_exist=RxReply();
-
-	DelayPass();
-	
-	if(is_exist) {
-		return 1;
-	} else {
-		return 0;
-	}
-
+	uint8_t f=RxReply();
+	PassRx();
+	return f;
 }
 
 void TxReset() {
@@ -50,9 +39,9 @@ void TxReset() {
 uint8_t RxReply() {
 	//Rx階段：Step 5.延時並讀取DS18B20回應電位值
 	delayMicroseconds(70);
-	return !digitalRead(g_dq_pin);	
+	return !digitalRead(g_dq_pin);
 }
-void DelayPass() {
+void PassRx() {
 	//Rx階段：Step 6.延時並讓其超過Rx的480us時間
 	delayMicroseconds(410);
 }
