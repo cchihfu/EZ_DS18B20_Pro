@@ -14,15 +14,15 @@ void setup() {
 }
 
 void loop() {
-	PrintInfo(IsResetOk()) ;
+	ShowOkInfo(CommandReset()) ;
 	delay(2000);
 }
 
-uint8_t IsResetOk()
+uint8_t CommandReset()
 {
 	TxReset();
-	uint8_t f=RxReply();
-	PassRx();
+	uint8_t f=RxResult();
+	ThroughRx();
 	return f;
 }
 
@@ -31,22 +31,22 @@ void TxReset() {
 	pinMode(g_dq_pin, OUTPUT);
 	//Tx階段：Step 2.主機拉低電位
 	digitalWrite(g_dq_pin, LOW);
-	//Tx階段：Step 3.主機持續於低電位
+	//Tx階段：Step 3.主機維持於低電位
 	delayMicroseconds(720);
 	//Tx階段：Step 4.主機釋放電位控制，轉為輸入狀態
 	pinMode(g_dq_pin, INPUT);
 }
-uint8_t RxReply() {
+uint8_t RxResult() {
 	//Rx階段：Step 5.延時並讀取DS18B20回應電位值
 	delayMicroseconds(70);
 	return !digitalRead(g_dq_pin);
 }
-void PassRx() {
+void ThroughRx() {
 	//Rx階段：Step 6.延時並讓其超過Rx的480us時間
 	delayMicroseconds(410);
 }
 
-void PrintInfo(uint8_t isOk)
+void ShowOkInfo(uint8_t isOk)
 {
 	if(isOk) {
 		Serial.println("Reset OK");

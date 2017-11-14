@@ -8,7 +8,7 @@
 //Arduino數位腳位2接到DS18B20的第2腳(DQ)，DQ為Data input/output的縮寫
 const uint8_t g_dq_pin =2;
 
-uint16_t tx_stay_low_time=720;
+uint16_t tx_low_time=720;
 uint16_t rx_wait_read_time=70;
 uint16_t rx_pass_time=410;
 
@@ -23,18 +23,17 @@ void loop() {
 
 	//Serial.println("<<Test the Speed : Tx Stay Low Time >>");
 	uint8_t test_num=1;
-	uint8_t tx_stay_low_time_min=0;
-	uint8_t tx_stay_low_time_max=0;
+	uint8_t tx_low_time_min=0;
 
-	tx_stay_low_time=1;
+	tx_low_time=1;
 	for(int i = 0; i < 100; ++i)
 	{
 		while(!IsResetOk()) {
-			tx_stay_low_time++;
+			tx_low_time++;
 		}
-		if(tx_stay_low_time>tx_stay_low_time_max)
+		if(tx_low_time>tx_low_time_max)
 		{
-			tx_stay_low_time_max=tx_stay_low_time;
+			tx_low_time_max=tx_low_time;
 		}
 		/*Serial.print("the ");
 		Serial.print(test_num);
@@ -44,7 +43,7 @@ void loop() {
 		test_num++;
 	}
 	Serial.print("the 100 times test result:Tx stay in LOW time >>");
-	Serial.println(tx_stay_low_time_max);
+	Serial.println(tx_low_time_max);
 	//PrintInfo(IsResetOk()) ;
 	delay(1000);
 }
@@ -63,7 +62,7 @@ void TxReset() {
 	//Tx階段：Step 2.主機拉低電位
 	digitalWrite(g_dq_pin, LOW);
 	//Tx階段：Step 3.主機持續於低電位
-	delayMicroseconds(tx_stay_low_time);
+	delayMicroseconds(tx_low_time);
 	//Tx階段：Step 4.主機釋放電位控制，轉為輸入狀態
 	pinMode(g_dq_pin, INPUT);
 }
@@ -82,7 +81,7 @@ void PrintInfo(uint8_t isOk)
 	if(isOk) {
 		Serial.print("Reset OK");
 		Serial.print(",");
-		Serial.print(tx_stay_low_time);
+		Serial.print(tx_low_time);
 		Serial.print(",");
 		Serial.print(rx_wait_read_time);
 		Serial.print(",");
