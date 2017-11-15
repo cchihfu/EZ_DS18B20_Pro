@@ -28,7 +28,7 @@ void loop() {
 	delay(3000);
 
 }
-void PrintScratchpad(){
+void PrintScratchpad() {
 	Serial.println("DS18b20's scratchpad Data ->");
 	for(int i = 0; i < 9; ++i)
 	{
@@ -65,10 +65,12 @@ float getTempC()
 	return Caculate_Temperature();    //計算溫度並傳回溫度值
 }
 
-void SaveData(){
+void SaveData() {
 	for(int i = 0; i < 9; ++i)
 	{
-		scratchpad[i]=ReceiveData();
+		noInterrupts();
+		scratchpad[i]=ReadByte();
+		interrupts();
 	}
 }
 
@@ -122,12 +124,13 @@ float Caculate_Temperature()
 	return fp_temp;
 }
 
-uint8_t ReceiveData()
+uint8_t ReadByte()
 {
 	uint8_t byte_in=0;
 	for(uint8_t i = 0; i < 8; i++)
 	{
 		//此時所測到的電位，就是此位元的資料
+		noInterrupts();
 		if(ReadSlot()) {
 			//看看此時主機線的電位狀況若為高位，就是1
 			bitSet(byte_in, i); 		  //將byte_in第i個位元值，設置為1
@@ -135,6 +138,7 @@ uint8_t ReceiveData()
 		else {
 			bitClear(byte_in, i); 		//將byte_in第i個位元值，設置為0
 		}
+		interrupts();
 	}
 	return (byte_in);
 }
@@ -145,6 +149,7 @@ uint8_t ReadSlot() {
 	//me:調整為2/10/48
 	//所以位置於12~13時為佳！這個時間點，才能判別0或1
 	//讀時隙（Read Time Slot）步驟01：確保與上一個讀時序有1us的間隔
+	noInterrupts();
 	delayMicroseconds(1);
 	//讀時隙（Read Time Slot）步驟02：啟始信號--拉低電位
 	pinMode(g_dq_pin, OUTPUT);	      //轉為輸出，可達到高電位
@@ -158,6 +163,7 @@ uint8_t ReadSlot() {
 	//讀時隙（Read Time Slot）步驟06：讀取slot的電位值
 	uint8_t fp=digitalRead(g_dq_pin);
 	//讀時隙（Read Time Slot）步驟07：延時動作至少要60us
+	interrupts();
 	delayMicroseconds(55);			 //加上延時過渡此段作業時間60us
 	return fp;
 }
@@ -165,24 +171,30 @@ uint8_t ReadSlot() {
 void SendCommand(uint8_t instruction)
 {
 	for(uint8_t i = 0; i < 8; i++) {
+		noInterrupts();
 		WriteSolt(bitRead(instruction, i));
+		interrupts();
 	}
 }
 
 void WriteSolt(uint8_t order_bit)
 {
 	if(order_bit) {   	    //當值為1時的處理，
+		noInterrupts();
 		pinMode(g_dq_pin, OUTPUT);      //先將pin腳改為輸出狀態
 		digitalWrite(g_dq_pin, LOW);    //將電位拉低，等於通知DS18B20要do something
 		delayMicroseconds(10); 		    //至少要等待1us，但於15us前轉為高電位
 		pinMode(g_dq_pin, INPUT);	    //將接收轉成INPUT狀態，轉為高電位
+		interrupts();
 		delayMicroseconds(60);		    //加前段的延時至少等待60us過此周期
 	}
 	else { 							   //當寫入值為'0'時，Tx拉低電位時段60~120us
+		noInterrupts();
 		pinMode(g_dq_pin, OUTPUT);	   //先轉為輸出狀態
 		digitalWrite(g_dq_pin, LOW);   //將電位輸出低電位
 		delayMicroseconds(65);         //靜靜的等待DS18B20來讀取資料
 		pinMode(g_dq_pin, INPUT);      //釋放電位控制轉回輸入狀態
+		interrupts();
 		delayMicroseconds(5);		   //等待上拉電阻將電位復位為HIGH
 	}
 }
@@ -190,7 +202,9 @@ void WriteSolt(uint8_t order_bit)
 uint8_t CommandReset()
 {
 	TxReset();
+	noInterrupts();
 	uint8_t f=RxResult();
+	interrupts();
 	ThroughRx();
 	//Serial.print("Reset==>");
 	//Serial.println(f);
@@ -199,10 +213,12 @@ uint8_t CommandReset()
 
 void TxReset() {
 	uint16_t time_keep_low = 480;
+	noInterrupts();
 	//Tx階段：Step 1.主機發送重置脈沖
 	pinMode(g_dq_pin, OUTPUT);
 	//Tx階段：Step 2.主機拉低電位
 	digitalWrite(g_dq_pin, LOW);
+	interrupts();
 	//Tx階段：Step 3.主機持續於低電位
 	delayMicroseconds(time_keep_low);
 	//Tx階段：Step 4.主機釋放電位控制，轉為輸入狀態
