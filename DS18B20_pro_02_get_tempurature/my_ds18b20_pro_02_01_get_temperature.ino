@@ -5,7 +5,7 @@
  			能做資料讀寫之功能，順利取得溫度值並回饋訊息至串列埠螢幕中
  - 主機版本：Arduino UNO R3
  *********************************************************************/
-const uint8_t  g_dq_pin =2;             //Arduino數位腳位2接到DS18B20，DQ為Data input/output的縮寫
+const uint8_t  g_dq_pin =7;             //Arduino數位腳位2接到DS18B20，DQ為Data input/output的縮寫
 
 //ROM命令
 #define Skip_ROM 			0xcc	//用於1對1時，省略每次作ROM序號確認程序
@@ -23,7 +23,7 @@ void setup() {
 void loop() {
 	Serial.print("DS18b20's Temperature ->");
 	Serial.println(getTempC());
-	delay(2000);
+	delay(1000);
 }
 
 float getTempC()
@@ -40,11 +40,8 @@ float getTempC()
 	//方法2：讀忙控制：參考Datasheet當DS18B20於轉換溫度資料時
 	//若主機對它作讀取slot的動作，它將會持續於低電位(0)
 	//直到它轉換完畢後，就能得到1
-	while(! CatchSlot());
-	//實際上，會有點問題，就是要再delay一下，不然會有奇怪的增值出現
-	//例如：MSB從1變成10001，但只要加點延時既可解決，若要保險時
-	//將MSB的前4位皆強迫去除，使用(MSB&0x0f)
-	delay(50);
+	while(! ReadSlot());
+	
 
 	//再次重啟，因為要作通訊作業
 	while(!CommandReset());       	  //重啟成功，再進行動作
@@ -109,7 +106,7 @@ uint8_t ReceiveData()
 	for(uint8_t i = 0; i < 8; i++)
 	{
 		//此時所測到的電位，就是此位元的資料
-		if(CatchSlot()) {
+		if(ReadSlot()) {
 			//看看此時主機線的電位狀況若為高位，就是1
 			bitSet(byte_in, i); 		  //將byte_in第i個位元值，設置為1
 		}
@@ -120,14 +117,26 @@ uint8_t ReceiveData()
 	return (byte_in);
 }
 
-uint8_t CatchSlot() {
+uint8_t ReadSlot() {
+	//one wire的設定是3,10,53
+	//主廠建議：6/9/55（含步驟是4/8/55）亦可
+	//me:調整為2/10/48
+	//所以位置於12~13時為佳！這個時間點，才能判別0或1
+	//讀時隙（Read Time Slot）步驟01：確保與上一個讀時序有1us的間隔
+	delayMicroseconds(1);
+	//讀時隙（Read Time Slot）步驟02：啟始信號--拉低電位
 	pinMode(g_dq_pin, OUTPUT);	      //轉為輸出，可達到高電位
 	digitalWrite(g_dq_pin, LOW);	  //將電位拉低告訴DS18B20，主機已準備好了
+	//讀時隙（Read Time Slot）步驟03：保持低電位最少1us
 	delayMicroseconds(2);
-	pinMode(g_dq_pin, INPUT);		  //轉為輸入狀態，這樣就不會輸出電壓與DB18B20相衝突，同時位於高電位
-	delayMicroseconds(10);			  //約於12us時取樣
+	//讀時隙（Read Time Slot）步驟04：釋放線路電位
+	pinMode(g_dq_pin, INPUT);		  //轉為輸入狀態，同時釋放線路
+	//讀時隙（Read Time Slot）步驟05：等待時間，
+	delayMicroseconds(10);			  //加前面的延時，約於12~13us時取樣
+	//讀時隙（Read Time Slot）步驟06：讀取slot的電位值
 	uint8_t fp=digitalRead(g_dq_pin);
-	delayMicroseconds(53);		//加上延時過渡此段作業時間
+	//讀時隙（Read Time Slot）步驟07：延時動作至少要60us
+	delayMicroseconds(55);			 //加上延時過渡此段作業時間60us
 	return fp;
 }
 
@@ -140,19 +149,19 @@ void SendCommand(uint8_t instruction)
 
 void WriteSolt(uint8_t order_bit)
 {
-	if(order_bit) {   	    //當值為1時的處理
-		pinMode(g_dq_pin, OUTPUT);       //先將pin腳改為輸出狀態
-		digitalWrite(g_dq_pin, LOW);     //將電位拉低，等於通知DS18B20要do something
-		delayMicroseconds(1); 		   //至少要等待1us
-		pinMode(g_dq_pin, INPUT);	       //將接收轉成INPUT狀態，就是高電位
-		delayMicroseconds(59);		   //基本等待60ms過此周期
+	if(order_bit) {   	    //當值為1時的處理，
+		pinMode(g_dq_pin, OUTPUT);      //先將pin腳改為輸出狀態
+		digitalWrite(g_dq_pin, LOW);    //將電位拉低，等於通知DS18B20要do something
+		delayMicroseconds(10); 		    //至少要等待1us，但於15us前轉為高電位
+		pinMode(g_dq_pin, INPUT);	    //將接收轉成INPUT狀態，轉為高電位
+		delayMicroseconds(60);		    //加前段的延時至少等待60us過此周期
 	}
-	else { 							   //當寫入值為'0'時
+	else { 							   //當寫入值為'0'時，Tx拉低電位時段60~120us
 		pinMode(g_dq_pin, OUTPUT);	   //先轉為輸出狀態
-		digitalWrite(g_dq_pin, LOW);	   //將電位輸出低電位
-		delayMicroseconds(59);         //靜靜的等待DS18B20來讀取資料
-		pinMode(g_dq_pin, INPUT);        //轉回輸入狀態，可達到高電位的狀態，並可準備好下一個周期
-		delayMicroseconds(1);
+		digitalWrite(g_dq_pin, LOW);   //將電位輸出低電位
+		delayMicroseconds(65);         //靜靜的等待DS18B20來讀取資料
+		pinMode(g_dq_pin, INPUT);      //釋放電位控制轉回輸入狀態
+		delayMicroseconds(5);		   //等待上拉電阻將電位復位為HIGH
 	}
 }
 
@@ -167,7 +176,7 @@ uint8_t CommandReset()
 }
 
 void TxReset() {
-	uint16_t time_keep_low = 720;
+	uint16_t time_keep_low = 480;
 	//Tx階段：Step 1.主機發送重置脈沖
 	pinMode(g_dq_pin, OUTPUT);
 	//Tx階段：Step 2.主機拉低電位
@@ -186,14 +195,15 @@ uint8_t RxResult() {
 }
 
 void ThroughRx() {
-	//方法1：讓其自然超過Master最長的Rx週期
-	//uint16_t time_through =420;
 	//Rx階段：Step 6.延時並讓其超過Rx的480us時間
-	//delayMicroseconds(time_through);
+
+	//方法1：讓其自然超過Master最長的Rx週期
+	uint16_t time_through =410;
+	delayMicroseconds(time_through);
 
 	//方法2：
 	//當DS18B20仍在回應（低電位）就停於此，等其拉高就返回
-	while(!digitalRead(g_dq_pin));
+	//while(!digitalRead(g_dq_pin));
 }
 
 
