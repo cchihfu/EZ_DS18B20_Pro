@@ -6,10 +6,12 @@
  - 版本新增：讀取中間暫存器之資料
  - 主機版本：Arduino UNO R3
  *********************************************************************/
-const uint8_t  g_dq_pin =7;             //Arduino數位腳位2接到DS18B20，DQ為Data input/output的縮寫
+uint8_t  g_dq_pin =7;             //Arduino數位腳位2接到DS18B20，DQ為Data input/output的縮寫
 uint8_t scratchpad[9];
-uint8_t g_ms_sample_t = 0;
-uint8_t g_ms_release_t = 0;
+uint8_t g_ms_release_t = 0;			//主機釋放時間點
+uint8_t g_ms_sample_t = 0;			//主機取樣時間點
+uint8_t g_ms_read_t = 59;			//整體週期讀取時間
+
 //ROM命令
 #define Skip_ROM 			0xcc	//用於1對1時，省略每次作ROM序號確認程序
 
@@ -28,32 +30,61 @@ void loop() {
 }
 
 void TestReadslot() {
-	//改變sample time，來試試
+	//測試釋放時間點及取sample time，來試試其範圍方何？
+	Serial.println("Test Vcc->5V R->4.7k Pin 7 & Pin 8");
+	g_dq_pin =7;             //Arduino數位腳位2接到DS18B20，DQ為Data input/output的縮寫
 
-
-	for(g_ms_release_t = 0; g_ms_release_t  < 20; ++g_ms_release_t)
+	for(g_ms_release_t = 0; g_ms_release_t  < 10; ++g_ms_release_t)
 	{
-		for(g_ms_sample_t = 0; g_ms_sample_t  < 20; ++g_ms_sample_t)
+		for(g_ms_sample_t = (12-g_ms_release_t); g_ms_sample_t  < (18-g_ms_release_t); ++g_ms_sample_t)
+			//for(g_ms_sample_t = 0; g_ms_sample_t  <20; ++g_ms_sample_t)
 		{
 			//如果讀取資料並CRC檢查OK就表示成功
 			uint8_t ok_time = 0;
-			for(int j = 0; j <3; ++j)
+			for(int j = 0; j <100; ++j)
 			{
 				if(FoundDataWarehouse())
 				{
 					ok_time++;
 				}
 			}
-			Serial.print("TempC -> ");
+			Serial.print("pin 7,Temp,");
 			Serial.print(getTempC());
-			Serial.print("  Tr -> ");
+			Serial.print(",Tr,");
 			Serial.print(g_ms_release_t);
-			Serial.print("  Ts -> ");
+			Serial.print(",Ts,");
 			Serial.print(g_ms_sample_t);
-			Serial.print("  OK->");
+			Serial.print(",OK,");
 			Serial.println(ok_time);
 		}
 	}
+	g_dq_pin =8;             //Arduino數位腳位2接到DS18B20，DQ為Data input/output的縮寫
+	for(g_ms_release_t = 0; g_ms_release_t  < 10; ++g_ms_release_t)
+	{
+		for(g_ms_sample_t = (12-g_ms_release_t); g_ms_sample_t  < (18-g_ms_release_t); ++g_ms_sample_t)
+			//for(g_ms_sample_t = 0; g_ms_sample_t  <20; ++g_ms_sample_t)
+		{
+			//如果讀取資料並CRC檢查OK就表示成功
+			uint8_t ok_time = 0;
+			for(int j = 0; j <100; ++j)
+			{
+				if(FoundDataWarehouse())
+				{
+					ok_time++;
+				}
+			}
+			Serial.print("pin 8,Temp,");
+			Serial.print(getTempC());
+			Serial.print(",Tr,");
+			Serial.print(g_ms_release_t);
+			Serial.print(",Ts,");
+			Serial.print(g_ms_sample_t);
+			Serial.print(",OK,");
+			Serial.println(ok_time);
+		}
+	}
+
+
 
 }
 uint8_t CheckSratchpadCRC()
@@ -228,13 +259,13 @@ uint8_t ReadSlot() {
 
 	//讀時隙（Read Time Slot）步驟04：釋放線路電位
 	pinMode(g_dq_pin, INPUT);		  //轉為輸入狀態，同時釋放線路
-	//讀時隙（Read Time Slot）步驟05：等待時間，
+	//讀時隙（Read Time Slot）步驟05：等待時間再取樣，
 	delayMicroseconds(g_ms_sample_t);			  //加前面的延時，約於12~13us時取樣
 	//讀時隙（Read Time Slot）步驟06：讀取slot的電位值
 	uint8_t fp=digitalRead(g_dq_pin);
 	//讀時隙（Read Time Slot）步驟07：延時動作至少要60us
 	interrupts();
-	delayMicroseconds(59-(g_ms_sample_t+g_ms_release_t));			 //加上延時過渡此段作業時間60us
+	delayMicroseconds(g_ms_read_t-(g_ms_sample_t+g_ms_release_t));			 //加上延時過渡此段作業時間60us
 	return fp;
 }
 
