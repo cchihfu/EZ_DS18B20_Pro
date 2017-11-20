@@ -1,6 +1,6 @@
 #include <mlds18b20.h>
 
-MLDS18B20 ds(7);
+MLDs18b20 ds(7);
 
 void setup() {
 	Serial.begin(9600);

@@ -8,20 +8,23 @@
 #else
 #include "WProgram.h"
 #endif
- 
+
 //ML是MinimaList 極簡的縮寫
-class MLDS18B20 {
+//Google命名規則：類型名稱的每個單詞首字母均大寫, 不包含底線
+class MLDs18b20 {
 public:
-	MLDS18B20(uint8_t DQ_PIN);
+	//DQ_PIN 要用大寫，等同於大家都這麼叫（外部可調用）
+	//如人人都知道要點翡翠（全省清心統一都有）
+	MLDs18b20(uint8_t DQ_PIN);
 
 	//為了無縫接軌，直接使用大品牌Onewire的函式名稱
-	// Perform a 1-Wire reset cycle. Returns 1 if a device responds
-	// with a presence pulse.  Returns 0 if there is no device or the
-	// bus is shorted or otherwise held low for more than 250uS
 	uint8_t reset(void);
 
 private:
+	//內部函式，外部無法調用
 	uint8_t TestConnect(void);
-	
+
+	//內部變數，只有在此類別中可用
+	//於此之義，我們都在一條線上
 	uint8_t _g_dq_pin;
 };

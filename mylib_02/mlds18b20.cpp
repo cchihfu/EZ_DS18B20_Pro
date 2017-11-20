@@ -1,20 +1,27 @@
 #include "mlds18b20.h"
 
-MLDS18B20::MLDS18B20(uint8_t DQ_PIN) {
+MLDs18b20::MLDs18b20(uint8_t DQ_PIN) {
+	//雖然外部都叫翡翠，但可能內部有另外的編號如茶葉001
+	//或是內部以A或F等代號作訊息傳達，要於此說明，通常用小寫
+	//前面再加"_"底線，以區別，就知道此為外部給予之函數值
+	//建構元：外部連接內部的設定
+	//將此變數儲存於 private 變數以供其他類別內的函式使用
 	_g_dq_pin = DQ_PIN;
 
-	//設定Pin腳的初始狀態
+	//將此 pin 腳初始化成輸出狀態
 	pinMode(_g_dq_pin, INPUT);
 }
+
+//:: 符號。這代表此函式是屬於MLDs18b20類別的成員函式
 
 // 函式功能說明
 // 1.檢測pin腳是否連接正常（未
 // 2.檢測DS18B20是否能正常回應
 // 以上狀況，若ok則傳回1，異常就傳回0
-uint8_t MLDS18B20::reset(void)
+uint8_t MLDs18b20::reset(void)
 {
 	//檢測01：接線狀態
-	if(!TestConnect()){return 0;} 
+	if(!TestConnect()) {return 0;}
 
 	//檢測02:DS18B20狀態
 	noInterrupts();
@@ -41,8 +48,8 @@ uint8_t MLDS18B20::reset(void)
 	return f;
 }
 
-uint8_t MLDS18B20::TestConnect(void)
- {
+uint8_t MLDs18b20::TestConnect(void)
+{
 	//防未正常接腳：arduino接到DQ_pin之線路異常
 	uint8_t retries = 60;
 	//先拉高電位（轉為讀取狀態）
@@ -58,6 +65,6 @@ uint8_t MLDS18B20::TestConnect(void)
 		delayMicroseconds(4);
 	}
 	return 1;
-	
+
 }
 
