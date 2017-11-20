@@ -1,13 +1,15 @@
-#include <Mlds18b20.h>
-uint8_t pin=7;
-MLDS18B20 ds(pin);
+#include <mlds18b20.h>
+
+MLDS18B20 ds(7);
+
 void setup() {
 	Serial.begin(9600);
 }
+
 void loop() {
-if(ds.CommandReset())
+if(ds.reset())
 	{
-		Serial.println(" so Great,Reset ok");
+		Serial.println("So Great,Reset ok");
 	} else {
 		Serial.println("Reset error");
 	}
