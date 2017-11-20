@@ -6,7 +6,7 @@
  - 版本新增：讀取中間暫存器之資料
  - 主機版本：Arduino UNO R3
  *********************************************************************/
-uint8_t  g_dq_pin =7;             //Arduino數位腳位2接到DS18B20，DQ為Data input/output的縮寫
+uint8_t  g_dq_pin =7;             //Arduino數位腳位7接到DS18B20，DQ為Data input/output的縮寫
 uint8_t scratchpad[9];
 uint8_t g_ms_release_t = 0;			//主機釋放時間點
 uint8_t g_ms_sample_t = 0;			//主機取樣時間點
