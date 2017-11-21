@@ -20,6 +20,9 @@ MLDs18b20::MLDs18b20(uint8_t DQ_PIN) {
 // 以上狀況，若ok則傳回1，異常就傳回0
 uint8_t MLDs18b20::reset(void)
 {
+	//	IO_REG_TYPE mask = bitmask;
+	//volatile IO_REG_TYPE *reg IO_REG_ASM = baseReg;
+
 	//檢測01：接線狀態
 	if(!TestConnect()) {return 0;}
 
