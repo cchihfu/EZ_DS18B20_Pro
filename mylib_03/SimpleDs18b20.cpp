@@ -7,8 +7,6 @@
 #define Convert_T			0x44	//啟動溫度轉換命令
 #define Read_Scratchpad		0xBE	//讀取暫存器值，有9個字元
 
-uint8_t scratchpad[9];
-
 SimpleDs18b20::SimpleDs18b20(uint8_t DQ_PIN) {
 	_g_dq_pin = DQ_PIN;
 	pinMode(_g_dq_pin, INPUT);
@@ -21,7 +19,7 @@ float SimpleDs18b20::GetTemperature(void)
 {
 	if(FoundDataWarehouse())	//讀取量測資料並建立基礎數據倉庫成功
 	{
-		return Caculate_Temperature(); //計算溫度並傳回溫度值
+		return CaculateTemperature(); //計算溫度並傳回溫度值
 	}
 	else {
 		//	Serial.println("DataRead.....");
@@ -38,7 +36,7 @@ float SimpleDs18b20::GetTemperature(void)
  * 5、若為負數時，加負數符號
  * 6、將溫度值傳回
  ************************************************************************/
-float SimpleDs18b20::Caculate_Temperature(void)
+float SimpleDs18b20::CaculateTemperature(void)
 {
 	//前兩個字元就是溫度的訊息
 	uint8_t temp_LSB = scratchpad[0];	  //第一個讀到的是低位

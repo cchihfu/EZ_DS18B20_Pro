@@ -6,8 +6,8 @@
 // modify it under the terms of the GNU Lesser General Public
 // License as published by the Free Software Foundation
 
-//#ifndef SIMPLEDS18B20_h
-//#define SIMPLEDS18B20_h
+//#ifndef SimpleDs18b20_h
+//#define SimpleDs18b20_h
 
 #if ARDUINO >= 100
 #include "Arduino.h"
@@ -22,7 +22,7 @@ public:
 	float GetTemperature(void);
 
 private:
-	float Caculate_Temperature(void);
+	float CaculateTemperature(void);
 
 	uint8_t FoundDataWarehouse(void);
 
@@ -51,5 +51,7 @@ private:
 	void ThroughRx(void);
 
 	uint8_t _g_dq_pin;
+
+	uint8_t scratchpad[9];
 
 };
