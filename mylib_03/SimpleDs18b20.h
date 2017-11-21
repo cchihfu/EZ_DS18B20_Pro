@@ -6,8 +6,9 @@
 // modify it under the terms of the GNU Lesser General Public
 // License as published by the Free Software Foundation
 
-//#ifndef SimpleDs18b20_h
-//#define SimpleDs18b20_h
+#ifndef SimpleDs18b20_h
+#define SimpleDs18b20_h
+#endif
 
 #if ARDUINO >= 100
 #include "Arduino.h"
