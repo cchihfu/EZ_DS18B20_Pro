@@ -1,11 +1,4 @@
-/**********************************************************************
- - 適用狀況：Arduino 1 pin 連接1 pcs DS18B20之情況
- - 功能描述：讀寫DS18B20攝氏溫度值
- - 程式目標：不引用他人函數庫的情況下，能取得溫度值
- - 主機版本：Arduino UNO
- *********************************************************************/
-uint8_t g_dq_pin =7;            //Arduino數位腳位7接到DQ腳位
-uint8_t scratchpad[9];			//暫存器陣列（共9個字元-byte)
+#include "SimpleDs18b20.h"
 
 //ROM命令
 #define Skip_ROM 			0xCC	//當線上只有1個DS18B20時，可省略ROM序號確認程序
@@ -14,20 +7,17 @@ uint8_t scratchpad[9];			//暫存器陣列（共9個字元-byte)
 #define Convert_T			0x44	//啟動溫度轉換命令
 #define Read_Scratchpad		0xBE	//讀取暫存器值，有9個字元
 
-void setup() {
-	Serial.begin(9600);
-}
+uint8_t scratchpad[9];
 
-void loop() {
-	Serial.print("<<DS18B20 Temperature-->");
-	Serial.println(GetTemperature());
-	delay(2000);
+SimpleDs18b20::SimpleDs18b20(uint8_t DQ_PIN) {
+	_g_dq_pin = DQ_PIN;
+	pinMode(_g_dq_pin, INPUT);
 }
 /**************************************************************************
- * [取得溫度值℃]
+ * [取得溫度值]
  * 如果資料讀取程序順利，將溫度值傳回，不然傳回999.99
  ************************************************************************/
-float GetTemperature()
+float SimpleDs18b20::GetTemperature(void)
 {
 	if(FoundDataWarehouse())	//讀取量測資料並建立基礎數據倉庫成功
 	{
@@ -48,7 +38,7 @@ float GetTemperature()
  * 5、若為負數時，加負數符號
  * 6、將溫度值傳回
  ************************************************************************/
-float Caculate_Temperature()
+float SimpleDs18b20::Caculate_Temperature(void)
 {
 	//前兩個字元就是溫度的訊息
 	uint8_t temp_LSB = scratchpad[0];	  //第一個讀到的是低位
@@ -81,7 +71,7 @@ float Caculate_Temperature()
 * 4.讀取暫存器資料並上架（放入變數陣列中）
 * 5.並作CRC檢驗，當OK時，就傳回true
 **************************************************************************/
-uint8_t FoundDataWarehouse()
+uint8_t SimpleDs18b20::FoundDataWarehouse(void)
 {
 	//step:01
 	while(!Initialize());
@@ -105,7 +95,7 @@ uint8_t FoundDataWarehouse()
 	return CheckSratchpadCRC();		 //檢查數據資料是否正確，以作為此次量測成功與否
 }
 
-void ShelveData()
+void SimpleDs18b20::ShelveData(void)
 {
 	for(int i = 0; i < 9; ++i)
 	{
@@ -120,7 +110,7 @@ void ShelveData()
 * 1.將暫存器的資料0-7依CRC8 MAXIM之規則計算一次
 * 2.計算值與暫存器之CRC值比較，若相同則傳回 1，否則傳回 0
 **************************************************************************/
-uint8_t CheckSratchpadCRC()
+uint8_t SimpleDs18b20::CheckSratchpadCRC(void)
 {
 	uint8_t chip_CRC=scratchpad[8];
 	uint8_t check_CRC =0;
@@ -135,7 +125,7 @@ uint8_t CheckSratchpadCRC()
 * 此函式為Dallas使用CRC8=X8+X5+X4+1的檢測法
 * 使用暫存器之值，進行CRC8之計算，並回傳計算結果
 **************************************************************************/
-uint8_t ReCalculateCRC(uint8_t old_CRC,uint8_t input_byte)
+uint8_t SimpleDs18b20::ReCalculateCRC(uint8_t old_CRC,uint8_t input_byte)
 {
 	uint8_t target_bit, rightmost_bit, polynomial_bit;
 	for(int i = 0; i < 8; ++i)
@@ -157,7 +147,7 @@ uint8_t ReCalculateCRC(uint8_t old_CRC,uint8_t input_byte)
 	return old_CRC;
 }
 
-uint8_t ReadByte()
+uint8_t SimpleDs18b20::ReadByte(void)
 {
 	uint8_t byte_in=0;
 	for(uint8_t i = 0; i < 8; i++)
@@ -176,7 +166,7 @@ uint8_t ReadByte()
 	return (byte_in);
 }
 
-uint8_t ReadSlot()
+uint8_t SimpleDs18b20::ReadSlot(void)
 {
 	//one wire的設定是3,10,53
 	//主廠建議：6/9/55（含Step是4/8/55）亦可
@@ -185,25 +175,25 @@ uint8_t ReadSlot()
 	noInterrupts();
 	delayMicroseconds(1);
 	//讀時隙（Read Time Slot）Step02：啟始信號--拉低電位
-	pinMode(g_dq_pin, OUTPUT);	      //轉為輸出，可達到高電位
-	digitalWrite(g_dq_pin, LOW);	  //將電位拉低告訴DS18B20，主機已準備好了
+	pinMode(_g_dq_pin, OUTPUT);	      //轉為輸出，可達到高電位
+	digitalWrite(_g_dq_pin, LOW);	  //將電位拉低告訴DS18B20，主機已準備好了
 	//讀時隙（Read Time Slot）Step03：保持低電位最少1us
 	delayMicroseconds(1);
 
 	//讀時隙（Read Time Slot）Step04：釋放線路電位
 	delayMicroseconds(2);
-	pinMode(g_dq_pin, INPUT);		  //轉為輸入狀態，同時釋放線路
+	pinMode(_g_dq_pin, INPUT);		  //轉為輸入狀態，同時釋放線路
 	//讀時隙（Read Time Slot）Step05：等待時間再取樣，
 	delayMicroseconds(9);			  //加前面的延時，於2+9<=11us時取樣為保險值
 	//讀時隙（Read Time Slot）Step06：讀取slot的電位值
-	uint8_t fp=digitalRead(g_dq_pin);
+	uint8_t fp=digitalRead(_g_dq_pin);
 	//讀時隙（Read Time Slot）Step07：延時動作達到讀時序時段全長為60us
 	interrupts();
 	delayMicroseconds(48);
 	return fp;
 }
 
-void SendCommand(uint8_t instruction)
+void SimpleDs18b20::SendCommand(uint8_t instruction)
 {
 	for(uint8_t i = 0; i < 8; i++) {
 		noInterrupts();
@@ -212,23 +202,23 @@ void SendCommand(uint8_t instruction)
 	}
 }
 
-void WriteSolt(uint8_t order_bit)
+void SimpleDs18b20::WriteSolt(uint8_t order_bit)
 {
 	if(order_bit) {						//當值為1時的處理，
 		noInterrupts();
-		pinMode(g_dq_pin, OUTPUT);      //先將pin腳改為輸出狀態
-		digitalWrite(g_dq_pin, LOW);    //將電位拉低，等於通知DS18B20要do something
+		pinMode(_g_dq_pin, OUTPUT);      //先將pin腳改為輸出狀態
+		digitalWrite(_g_dq_pin, LOW);    //將電位拉低，等於通知DS18B20要do something
 		delayMicroseconds(10); 		    //至少要等待1us，但於15us前轉為高電位
-		pinMode(g_dq_pin, INPUT);	    //將接收轉成INPUT狀態，轉為高電位
+		pinMode(_g_dq_pin, INPUT);	    //將接收轉成INPUT狀態，轉為高電位
 		interrupts();
 		delayMicroseconds(60);		    //加前段的延時至少等待60us過此周期
 	}
 	else { 							   //當寫入值為'0'時，Tx拉低電位時段60~120us
 		noInterrupts();
-		pinMode(g_dq_pin, OUTPUT);	   //先轉為輸出狀態
-		digitalWrite(g_dq_pin, LOW);   //將電位輸出低電位
+		pinMode(_g_dq_pin, OUTPUT);	   //先轉為輸出狀態
+		digitalWrite(_g_dq_pin, LOW);   //將電位輸出低電位
 		delayMicroseconds(65);         //靜靜的等待DS18B20來讀取資料
-		pinMode(g_dq_pin, INPUT);      //釋放電位控制轉回輸入狀態
+		pinMode(_g_dq_pin, INPUT);      //釋放電位控制轉回輸入狀態
 		interrupts();
 		delayMicroseconds(5);		   //等待上拉電阻將電位復位為HIGH
 	}
@@ -239,11 +229,11 @@ void WriteSolt(uint8_t order_bit)
 * 2.檢測DS18B20是否能正常回應
 * 以上狀況，若ok則傳回 1，異常就傳回 0
 **************************************************************************/
-uint8_t Initialize()
+uint8_t SimpleDs18b20::Initialize(void)
 {
 	//Step 01：接線狀態
 	if(!TestConnect()) {return 0;}
-
+	
 	//Step 02:DS18B20狀態
 	TxReset();					//Tx階段：主機發送詢問脈沖
 	noInterrupts();
@@ -252,18 +242,17 @@ uint8_t Initialize()
 	ThroughRx();				//渡過reset之時段延遲
 	return f;
 }
-
-uint8_t TestConnect(void)
+uint8_t SimpleDs18b20::TestConnect(void)
 {
 	//防未正常接腳：arduino接到DQ_pin之線路異常
 	uint8_t retries = 60;
 	//先拉高電位（轉為讀取狀態）
 	noInterrupts();
-	pinMode(g_dq_pin, INPUT);
+	pinMode(_g_dq_pin, INPUT);
 	interrupts();
 	//先觀察線路的狀態，時間約240us每隔4秒查一次
 	//若是正常線路應處於高電位（idle state）
-	while(!digitalRead(g_dq_pin))
+	while(!digitalRead(_g_dq_pin))
 	{
 		retries--;
 		if(retries == 0) {return 0;}
@@ -272,34 +261,32 @@ uint8_t TestConnect(void)
 	return 1;
 
 }
-
-void TxReset()
+void SimpleDs18b20::TxReset(void)
 {
 	uint16_t time_keep_low = 480;
 	noInterrupts();
 	//Tx階段：Step 1.主機發送重置脈沖
-	pinMode(g_dq_pin, OUTPUT);
+	pinMode(_g_dq_pin, OUTPUT);
 	//Tx階段：Step 2.主機拉低電位
-	digitalWrite(g_dq_pin, LOW);
+	digitalWrite(_g_dq_pin, LOW);
 	interrupts();
 	//Tx階段：Step 3.主機持續於低電位
 	delayMicroseconds(time_keep_low);
 	//Tx階段：Step 4.主機釋放電位控制，轉為輸入狀態
-	pinMode(g_dq_pin, INPUT);
+	pinMode(_g_dq_pin, INPUT);
 }
 
-uint8_t RxResult()
+uint8_t SimpleDs18b20::RxResult(void)
 {
 	uint8_t time_wait_read=70;
 	//Rx階段：Step 5.延時並讀取DS18B20回應電位值
 	delayMicroseconds(time_wait_read);
-	return !digitalRead(g_dq_pin);
+	return !digitalRead(_g_dq_pin);
 }
 
-void ThroughRx()
+void SimpleDs18b20::ThroughRx(void)
 {
 	//Step 6.延時並讓其超過Rx的480us時間
 	uint16_t time_through =410;
 	delayMicroseconds(time_through);
 }
-
