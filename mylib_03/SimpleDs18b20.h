@@ -5,10 +5,8 @@
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
 // License as published by the Free Software Foundation
-
 #ifndef SimpleDs18b20_h
 #define SimpleDs18b20_h
-#endif
 
 #if ARDUINO >= 100
 #include "Arduino.h"
@@ -56,3 +54,4 @@ private:
 	uint8_t scratchpad[9];
 
 };
+#endif
