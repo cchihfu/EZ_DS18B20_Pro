@@ -13,15 +13,16 @@ void setup() {
 }
 
 void loop() {
-	digitalWrite(13, state);
-	//依讀取與否的狀態來讀取溫度值
 	if(state) {
 		Serial.print("Ds18B20's Temperature --> ");
 		Serial.println(ds01.GetTemperature());
 		state = !state;
 	}
-	
+	digitalWrite(13, HIGH);
 	delay(1000);
+	//依讀取與否的狀態來讀取溫度值
+	digitalWrite(13, LOW);
+	delay(2000);
 
 }
 void GetTemp()
