@@ -8,5 +8,4 @@ void loop() {
 	Serial.print("Ds18B20's Temperature --> ");
 	Serial.println(ds01.GetTemperature());
 	delay(1000);
-
 }

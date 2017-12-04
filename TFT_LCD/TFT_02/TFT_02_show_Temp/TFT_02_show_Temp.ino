@@ -1,5 +1,4 @@
 #include <SimpleDs18b20.h>
-#include <EasyTransfer.h> //https://github.com/madsci1016/Arduino-EasyTransfer
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_ST7735.h> // Hardware-specific library
 #include <SPI.h> 
@@ -42,10 +41,10 @@ void setup(void)
 
 void loop()
 {
-    String temperatureString = String(ds01.GetTemperature(),2);
+    String temperatureString = String(ds01.GetTemperature(),1);
     temperatureString.toCharArray(temperatureChar,10);
-    tft.fillRect(5,20,90,34,ST7735_BLACK);
-    printText(temperatureChar, ST7735_RED,5,26,3);
+    tft.fillRect(2,20,90,34,ST7735_BLACK);
+    printText(temperatureChar, ST7735_WHITE,20,26,2);
   
    delay(2000);
 }
@@ -59,7 +58,9 @@ void printText(char *text, uint16_t color, int x, int y,int textSize)
 }
 void printUI()
 {
-    printText("TEMPERATURE", ST7735_MAGENTA,30,5,1);  // Temperature Static Text
-    printText("o", ST7735_CYAN,97,19,2);
-    printText("C", ST7735_YELLOW,110,26,3);
+    tft.fillRect(2,1,127,15,ST7735_WHITE);
+    printText("TEMPERATURE", ST7735_BLACK,30,5,1);  // Temperature Static Text
+    printText("o", ST7735_WHITE,97,19,2);
+    printText("C", ST7735_WHITE,110,26,3);
+    tft.drawLine(0, 56, 127, 56, ST7735_WHITE);
 }
