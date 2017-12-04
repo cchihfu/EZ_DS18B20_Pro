@@ -14,6 +14,9 @@
 #include "WProgram.h"
 #endif
 
+// Error Codes異常值
+#define DEVICE_DISCONNECTED_C -127  //當DS18B20異常時，會顯現-127的數值
+
 class SimpleDs18b20 {
 public:
 	SimpleDs18b20(uint8_t DQ_PIN);
@@ -23,7 +26,7 @@ public:
 private:
 	float CaculateTemperature(void);
 
-	uint8_t FoundDataWarehouse(void);
+	uint8_t isFoundDataWarehouse(void);
 
 	void ShelveData(void);
 
@@ -39,7 +42,7 @@ private:
 
 	void WriteSolt(uint8_t order_bit);
 
-	uint8_t Initialize(void);
+	uint8_t isConnected(void);
 
 	uint8_t TestConnect(void);
 

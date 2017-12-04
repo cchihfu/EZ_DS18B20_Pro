@@ -14,6 +14,9 @@ uint8_t scratchpad[9];			//暫存器陣列（共9個字元-byte)
 #define Convert_T			0x44	//啟動溫度轉換命令
 #define Read_Scratchpad		0xBE	//讀取暫存器值，有9個字元
 
+// Error Codes異常值
+#define DEVICE_DISCONNECTED_C -127  //當DS18B20異常時，會顯現-127的數值
+
 void setup() {
 	Serial.begin(9600);
 }
@@ -29,14 +32,17 @@ void loop() {
  ************************************************************************/
 float GetTemperature()
 {
-	if(FoundDataWarehouse())	//讀取量測資料並建立基礎數據倉庫成功
-	{
-		return Caculate_Temperature(); //計算溫度並傳回溫度值
+	if(Initialize()) {
+		if(FoundDataWarehouse())	//讀取量測資料並建立基礎數據倉庫成功
+		{
+			return Caculate_Temperature(); //計算溫度並傳回溫度值
+		}
 	}
 	else {
 		//	Serial.println("DataRead.....");
-		return 999.99;
+		return DEVICE_DISCONNECTED_C;
 	}
+
 }
 
 /**************************************************************************
@@ -239,7 +245,7 @@ void WriteSolt(uint8_t order_bit)
 * 2.檢測DS18B20是否能正常回應
 * 以上狀況，若ok則傳回 1，異常就傳回 0
 **************************************************************************/
-uint8_t Initialize()
+uint8_t Initialize(void)
 {
 	//Step 01：接線狀態
 	if(!TestConnect()) {return 0;}

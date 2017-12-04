@@ -7,6 +7,7 @@
 #define Convert_T			0x44	//啟動溫度轉換命令
 #define Read_Scratchpad		0xBE	//讀取暫存器值，有9個字元
 
+
 SimpleDs18b20::SimpleDs18b20(uint8_t DQ_PIN) {
 	_g_dq_pin = DQ_PIN;
 	pinMode(_g_dq_pin, INPUT);
@@ -17,14 +18,12 @@ SimpleDs18b20::SimpleDs18b20(uint8_t DQ_PIN) {
  ************************************************************************/
 float SimpleDs18b20::GetTemperature(void)
 {
-	if(FoundDataWarehouse())	//讀取量測資料並建立基礎數據倉庫成功
-	{
-		return CaculateTemperature(); //計算溫度並傳回溫度值
-	}
-	else {
-		//	Serial.println("DataRead.....");
-		return 999.99;
-	}
+	//狀況1：連線失敗，回傳異常值
+	if(!isConnected()) {return DEVICE_DISCONNECTED_C;}
+	//狀況2：傳回值CRC檢測異常，回傳異常值
+	if(!isFoundDataWarehouse()) {return DEVICE_DISCONNECTED_C;}	//讀取量測資料並建立基礎數據倉庫成功
+	//一切正常，傳回溫度值
+	return CaculateTemperature(); //計算溫度並傳回溫度值
 }
 
 /**************************************************************************
@@ -69,10 +68,10 @@ float SimpleDs18b20::CaculateTemperature(void)
 * 4.讀取暫存器資料並上架（放入變數陣列中）
 * 5.並作CRC檢驗，當OK時，就傳回true
 **************************************************************************/
-uint8_t SimpleDs18b20::FoundDataWarehouse(void)
+uint8_t SimpleDs18b20::isFoundDataWarehouse(void)
 {
 	//step:01
-	while(!Initialize());
+	if(!isConnected()) {return 0;} //異常狀態回報
 	SendCommand(Skip_ROM);		//主機下0xcc命令（1對1的省略ROM確認作業）
 	SendCommand(Convert_T);		//0x44啟動溫度轉換
 
@@ -82,7 +81,7 @@ uint8_t SimpleDs18b20::FoundDataWarehouse(void)
 	while(! ReadSlot());
 
 	//step:03
-	while(!Initialize());
+	if(!isConnected()) {return 0;} //異常狀態回報
 	SendCommand(Skip_ROM);		      //主機下0xcc命令（1對1的省略ROM確認作業）
 	SendCommand(Read_Scratchpad);	  //0xBE溫度暫存器中的訊息（共9個字元）
 
@@ -227,7 +226,7 @@ void SimpleDs18b20::WriteSolt(uint8_t order_bit)
 * 2.檢測DS18B20是否能正常回應
 * 以上狀況，若ok則傳回 1，異常就傳回 0
 **************************************************************************/
-uint8_t SimpleDs18b20::Initialize(void)
+uint8_t SimpleDs18b20::isConnected(void)
 {
 	//Step 01：接線狀態
 	if(!TestConnect()) {return 0;}

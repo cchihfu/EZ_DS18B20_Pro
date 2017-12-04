@@ -17,6 +17,8 @@ void loop() {
 		Serial.print("Ds18B20's Temperature --> ");
 		Serial.println(ds01.GetTemperature());
 		state = !state;
+		//防彈跳設定
+		delay(200);
 	}
 	digitalWrite(13, HIGH);
 	delay(1000);
@@ -27,6 +29,5 @@ void loop() {
 }
 void GetTemp()
 {
-
 	state = !state;
 }
